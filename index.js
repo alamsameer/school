@@ -6,7 +6,7 @@ const path = require('path');
 const process = require('process');
 const { authenticate } = require('@google-cloud/local-auth');
 const { google } = require('googleapis');
-const spreadsheetId='1dqX9M6OhjkeZ1hiRbkZY9l6x2IN0hq5csIb3Ld7yh_8'
+const spreadsheetId = '1dqX9M6OhjkeZ1hiRbkZY9l6x2IN0hq5csIb3Ld7yh_8'
 
 // If modifying these scopes, delete token.json.
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
@@ -30,10 +30,7 @@ const dummyData = [
     ['David Wilson', '19-54321', '19STU001', 'Riverside'],
     ['Olivia', '19-97531', '19VWX001', 'Parkside'],
 ];
-const data = [
-    ['John Doe', 'john.doe@example.com'],
-    ['Jane Smith', 'jane.smith@example.com']
-  ]; // Sample data to append
+
 
 
 /**
@@ -105,7 +102,7 @@ async function listMajors(auth) {
         console.log('No data found.');
         return;
     }
-    else{
+    else {
         return rows;
     }
 }
@@ -127,42 +124,50 @@ async function writeData(auth) {
     console.log(`${response.data.updatedCells} cells updated.`);
 }
 
-async function appendData(auth) {
+async function appendData(auth,data) {
     const sheets = google.sheets({ version: 'v4', auth });
-  
+
     const request = {
-      spreadsheetId,
-      range:"Sheet1!A1:A",
-      valueInputOption: 'USER_ENTERED',
-      resource: {
-        values: data,
-      },
+        spreadsheetId,
+        range: "Sheet1",
+        valueInputOption: 'USER_ENTERED',
+        resource: {
+            values: data,
+        },
     };
-  
+
     try {
-      const response = await sheets.spreadsheets.values.append(request);
-      console.log(`${response.data.updates.updatedCells} cells appended.`);
+        const response = await sheets.spreadsheets.values.append(request);
+        console.log(`${response.data.updates.updatedCells} cells appended.`);
     } catch (err) {
-      console.error('The API returned an error:', err);
+        console.error('The API returned an error:', err);
     }
-  }
-  
-// calling the write method 
-authorize()
-    .then(appendData)
-    .catch(console.error);
+}
 
 //  list all the student 
-
-authorize().then(listMajors).catch(console.error);
 
 app.get('/', async (req, res) => {
     const auth = await authorize();
     const rows = await listMajors(auth);
     res.send(rows);
-  });
-  
-  const port = 3000;
-  app.listen(port, () => {
+});
+app.post('/data',async (req, res) => {
+    const { name, email } = req.query;
+    const auth = await authorize();
+    const data = [[name, email]];
+    console.log(data
+        );
+
+    try {
+        await appendData(auth, data);
+        res.status(200).send('Data appended successfully.');
+    } catch (err) {
+        console.error('Error appending data:', err);
+        res.status(500).send('Error appending data.');
+    }
+});
+
+const port = 3000;
+app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
-  });
+});
